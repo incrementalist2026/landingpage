@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incrementalist - 90-Day Profit Sprint</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Custom Tailwind Config for Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deepBlue: '#0E2042',
+                        tealPrimary: '#036771',
+                        cloudyBlue: '#B9C6D9',
+                        lightNeutral: '#E0E3E3',
+                    },
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                        display: ['Nunito', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Nunito:wght@600;700;800&display=swap');
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Nunito', sans-serif;
+        }
+        /* Custom scroll behavior */
+        html {
+            scroll-behavior: smooth;
+        }
+        .accordion-content {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-white text-[#0E2042]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // --- INLINE ICONS ---
+        const IconBase = ({ children, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                {...props}
+            >
+                {children}
+            </svg>
+        );
+
+        const ArrowRight = (props) => (
+            <IconBase {...props}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></IconBase>
+        );
+        const ChevronDown = (props) => (
+            <IconBase {...props}><path d="m6 9 6 6 6-6" /></IconBase>
+        );
+        const ChevronUp = (props) => (
+            <IconBase {...props}><path d="m18 15-6-6-6 6" /></IconBase>
+        );
+        const Check = (props) => (
+            <IconBase {...props}><path d="M20 6 9 17l-5-5" /></IconBase>
+        );
+        const X = (props) => (
+            <IconBase {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></IconBase>
+        );
+        const TrendingUp = (props) => (
+            <IconBase {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></IconBase>
+        );
+        const BarChart3 = (props) => (
+            <IconBase {...props}><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></IconBase>
+        );
+        const PieChart = (props) => (
+            <IconBase {...props}><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></IconBase>
+        );
+        const Layers = (props) => (
+            <IconBase {...props}><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></IconBase>
+        );
+        const Target = (props) => (
+            <IconBase {...props}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></IconBase>
+        );
+        const AlertCircle = (props) => (
+            <IconBase {...props}><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></IconBase>
+        );
+        const Lock = (props) => (
+            <IconBase {...props}><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></IconBase>
+        );
+        const CheckCircle = (props) => (
+            <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></IconBase>
+        );
+
+        const App = () => {
+            // Navigation State
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+            // Form Submission State
+            const [isSubmitted, setIsSubmitted] = useState(false);
+            // Roadmap Accordion State
+            const [openMonth, setOpenMonth] = useState(1);
+
+            // Scroll Handler
+            const scrollToApply = () => {
+                const section = document.getElementById('apply-section');
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth' });
+                    setIsMenuOpen(false);
+                }
+            };
+
+            // Handle Form Submit
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setIsSubmitted(true);
+            };
+
+            const toggleMonth = (month) => {
+                setOpenMonth(openMonth === month ? null : month);
+            };
+
+            return (
+                <div className="min-h-screen bg-white font-sans text-[#0E2042]">
+                
+                {/* --- NAVIGATION --- */}
+                <nav className="fixed w-full bg-white/90 backdrop-blur-md z-50 border-b border-[#E0E3E3]">
+                    <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                    <div className="flex items-center">
+                        <img 
+                        src="logo.png" 
+                        alt="Incrementalist" 
+                        className="h-14 w-auto object-contain" 
+                        />
+                    </div>
+                    <div className="hidden md:flex items-center space-x-8">
+                        <button className="text-[#0E2042] font-medium hover:text-[#036771] transition-colors">
+                        Case Studies
+                        </button>
+                        <button 
+                            onClick={scrollToApply}
+                            className="bg-[#0E2042] text-white px-6 py-2.5 rounded hover:bg-[#036771] transition-colors font-semibold text-sm"
+                        >
+                            Apply for the Sprint
+                        </button>
+                    </div>
+                    
+                    {/* Mobile Menu Toggle (Visible on small screens) */}
+                    <div className="md:hidden">
+                        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[#0E2042]">
+                        {isMenuOpen ? <X /> : <ChevronDown className="transform rotate-0" />}
+                        </button>
+                    </div>
+                    </div>
+                    
+                    {/* Mobile Menu Dropdown */}
+                    {isMenuOpen && (
+                    <div className="md:hidden bg-white border-t border-[#E0E3E3] p-6 space-y-4 shadow-lg">
+                        <button className="block w-full text-left text-[#0E2042] font-medium py-2">Case Studies</button>
+                        <button 
+                            onClick={scrollToApply}
+                            className="block w-full bg-[#0E2042] text-white px-6 py-3 rounded font-semibold text-center"
+                        >
+                            Apply for the Sprint
+                        </button>
+                    </div>
+                    )}
+                </nav>
+
+                {/* --- 1. HERO SECTION --- */}
+                <section className="pt-32 pb-16 md:pt-40 md:pb-24 px-6 bg-gradient-to-b from-white to-[#F5F7F7]">
+                    <div className="max-w-4xl mx-auto text-center mb-16">
+                    <h1 className="text-4xl md:text-6xl font-extrabold leading-tight text-[#0E2042] mb-6">
+                        TURN WASTED AD SPEND INTO <span className="text-[#036771]">PROFITABLE GROWTH</span> IN 90 DAYS.
+                    </h1>
+                    <p className="text-lg md:text-xl text-[#0E2042]/80 leading-relaxed max-w-2xl mx-auto mb-8">
+                        A proven system for DTC brands to uncover hidden inefficiencies, fix broken growth signals, and scale profitably.
+                    </p>
+                    <p className="text-sm font-semibold text-[#036771] tracking-wide uppercase mb-10">
+                        Built for brands already spending six figures per month on ads
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <button 
+                            onClick={scrollToApply}
+                            className="w-full sm:w-auto bg-[#0E2042] text-white px-8 py-4 rounded font-bold text-lg hover:bg-[#0E2042]/90 transition-all shadow-lg hover:shadow-xl flex items-center justify-center group"
+                        >
+                            Apply to see if the 90-Day Sprint is a fit
+                            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                        <button className="w-full sm:w-auto text-[#0E2042] px-8 py-4 rounded font-semibold text-lg hover:bg-[#E0E3E3]/50 transition-colors">
+                        See how it works
+                        </button>
+                    </div>
+                    </div>
+
+                    {/* --- CREDIBILITY STRIP --- */}
+                    <div className="max-w-6xl mx-auto mt-8 md:mt-12 pt-8 border-t border-[#E0E3E3]/50">
+                        <p className="text-center text-[#0E2042]/50 text-xs font-bold uppercase tracking-widest mb-10 font-nunito">
+                            Trusted by teams scaling with profit — not guesswork
+                        </p>
+                        <div className="grid md:grid-cols-3 gap-6">
+                            
+                            {/* Card 1: Yarn (PRIMARY) */}
+                            <div className="bg-white/60 p-6 rounded-lg border border-[#E0E3E3] hover:border-[#036771]/30 transition-colors">
+                                <div className="font-bold text-[#0E2042] text-sm mb-3 opacity-60 uppercase tracking-wide">Yarn</div>
+                                <div className="text-3xl md:text-4xl font-extrabold text-[#036771] mb-2 font-nunito">+30%</div>
+                                <div className="text-sm font-bold text-[#0E2042] mb-4">YoY contribution margin</div>
+                                <p className="text-sm text-[#0E2042]/80 italic mb-4 leading-relaxed">
+                                    "Incrementalist helped us see what was actually driving profit, not just what looked good in dashboards."
+                                </p>
+                                <div className="text-xs text-[#0E2042]/60 font-semibold">
+                                    Daniel Recht — Creative Director
+                                </div>
+                            </div>
+
+                            {/* Card 2: X-Square Capital (SECONDARY) */}
+                            <div className="bg-white/60 p-6 rounded-lg border border-[#E0E3E3] hover:border-[#036771]/30 transition-colors">
+                                <div className="font-bold text-[#0E2042] text-sm mb-3 opacity-60 uppercase tracking-wide">X-Square Capital</div>
+                                <div className="text-3xl md:text-4xl font-extrabold text-[#036771] mb-2 font-nunito">+238%</div>
+                                <div className="text-sm font-bold text-[#0E2042] mb-4">YoY funded accounts</div>
+                                <p className="text-sm text-[#0E2042]/80 italic mb-4 leading-relaxed">
+                                    "Incrementalist didn’t just optimize campaigns — they rebuilt how we measure and decide."
+                                </p>
+                                <div className="text-xs text-[#0E2042]/60 font-semibold">
+                                    Ana Bonilla — CMO
+                                </div>
+                            </div>
+
+                            {/* Card 3: Bankaya (TERTIARY) */}
+                            <div className="bg-white/60 p-6 rounded-lg border border-[#E0E3E3] hover:border-[#036771]/30 transition-colors">
+                                <div className="font-bold text-[#0E2042] text-sm mb-3 opacity-60 uppercase tracking-wide">Bankaya</div>
+                                <div className="text-3xl md:text-4xl font-extrabold text-[#036771] mb-2 font-nunito">+60%</div>
+                                <div className="text-sm font-bold text-[#0E2042] mb-4">increase in funded loans</div>
+                                <p className="text-sm text-[#0E2042]/80 italic mb-4 leading-relaxed">
+                                    "The clarity we gained completely changed how we make growth decisions."
+                                </p>
+                                <div className="text-xs text-[#0E2042]/60 font-semibold">
+                                    Eduardo González — Head of Marketing
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- 2. THE CORE PROBLEM --- */}
+                <section className="py-20 px-6 bg-white">
+                    <div className="max-w-3xl mx-auto">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-12 h-1 bg-[#036771]"></div>
+                        <span className="font-nunito font-bold text-[#036771] uppercase tracking-wider text-sm">The Problem</span>
+                    </div>
+                    
+                    <h2 className="text-3xl md:text-4xl font-bold text-[#0E2042] mb-8">
+                        The invisible tax on growth
+                    </h2>
+
+                    <div className="prose prose-lg text-[#0E2042]/80 font-medium">
+                        <p className="mb-6">
+                        Most DTC brands aren’t failing because ads stopped working. They’re failing because they’re scaling without clarity.
+                        </p>
+                        
+                        {/* Monetized Pain Point */}
+                        <p className="mb-6 font-bold text-[#0E2042] border-l-4 border-[#E11D48] pl-4">
+                            Most brands at this stage are leaking 10–30% of profit without realizing it.
+                        </p>
+
+                        <p className="mb-8">
+                        As spend increases:
+                        </p>
+                        
+                        <div className="bg-[#F8FAFC] p-8 rounded-lg border border-[#E0E3E3] mb-8">
+                        <ul className="space-y-4">
+                            <li className="flex items-start gap-3">
+                            <TrendingUp className="w-6 h-6 text-[#036771] shrink-0 mt-1" />
+                            <span>Revenue may go up</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                            <BarChart3 className="w-6 h-6 text-[#036771] shrink-0 mt-1" />
+                            <span>ROAS may look "healthy"</span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                            <Layers className="w-6 h-6 text-[#036771] shrink-0 mt-1" />
+                            <span>Dashboards may look fine</span>
+                            </li>
+                            <li className="flex items-start gap-3 text-[#0E2042] font-bold">
+                            <AlertCircle className="w-6 h-6 text-[#E11D48] shrink-0 mt-1" />
+                            <span>But profit shrinks.</span>
+                            </li>
+                        </ul>
+                        </div>
+
+                        <p>
+                        Profit flattens — or drops. Cash flow tightens. Growth starts feeling heavier instead of easier. <br />
+                        <span className="font-bold text-[#0E2042]">This is the moment most brands hit a wall.</span>
+                        </p>
+                    </div>
+                    </div>
+                </section>
+
+                {/* --- 3. WHY THIS HAPPENS --- */}
+                <section className="py-20 px-6 bg-[#0E2042] text-white">
+                    <div className="max-w-3xl mx-auto">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-10 leading-tight">
+                        Why scaling breaks — even when performance "looks good"
+                    </h2>
+                    
+                    <div className="grid md:grid-cols-2 gap-12 items-center">
+                        <div className="space-y-6 text-[#E0E3E3] leading-relaxed">
+                        <p>
+                            Here’s the uncomfortable truth: Most brands don’t know which ad dollars actually come back as profit.
+                        </p>
+                        <p>
+                            Some spend is <span className="text-[#036771] font-bold text-white">incremental</span>.
+                        </p>
+                        <p>
+                            Some spend just captures existing demand. Some spend looks great in-platform — but hurts the business.
+                        </p>
+                        </div>
+                        
+                        <div className="bg-white/5 p-8 rounded-lg border border-white/10">
+                        <p className="text-xl font-nunito font-bold mb-4">The Trap:</p>
+                        <p className="text-[#B9C6D9] mb-4">
+                            When everything is blended together:
+                        </p>
+                        <ul className="space-y-3 mb-6">
+                            <li className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-[#635FAA]"></div>
+                            <span>You scale what feels safe</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-[#635FAA]"></div>
+                            <span>You trust ROAS instead of reality</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-[#635FAA]"></div>
+                            <span>You increase spend while margins erode</span>
+                            </li>
+                        </ul>
+                        <div className="border-t border-white/10 pt-4">
+                            <p className="font-bold text-white text-lg">
+                            That’s not growth. That’s expensive motion.
+                            </p>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* --- 5. FOUNDER PARTNERSHIP --- */}
+                <section className="py-20 px-6 bg-white">
+                    <div className="max-w-3xl mx-auto">
+                        <h2 className="text-3xl md:text-4xl font-bold text-[#0E2042] mb-8">
+                            This isn’t delegated. We work directly with you.
+                        </h2>
+                        <div className="prose prose-lg text-[#0E2042]/80 font-medium">
+                            <p className="mb-6">
+                                Incrementalist is not an agency. And it’s not a consulting firm where founders design the strategy and junior teams execute it.
+                            </p>
+                            <p className="mb-6">
+                                When you work with Incrementalist, you work directly with the founders. The same people who:
+                            </p>
+                            <ul className="list-disc pl-6 space-y-2 mb-6 text-[#0E2042]">
+                                <li>Diagnosed the problem</li>
+                                <li>Designed the system</li>
+                                <li>Tested it across real DTC brands</li>
+                                <li>And refined it through hands-on execution</li>
+                            </ul>
+                            <p>
+                                We stay involved — weekly, actively, and intentionally. Because at this stage of growth, clarity doesn’t come from delegation. <span className="font-bold text-[#0E2042]">It comes from senior judgment.</span>
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- 6. INTRODUCING SOLUTION --- */}
+                <section className="py-20 px-6 bg-[#0E2042] text-white overflow-hidden relative">
+                    {/* Subtle background element */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#036771] opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                    
+                    <div className="max-w-5xl mx-auto relative z-10">
+                    <div className="text-center mb-16">
+                        <span className="text-[#B9C6D9] font-bold tracking-widest text-sm uppercase mb-4 block">Introducing</span>
+                        <h2 className="text-4xl md:text-5xl font-extrabold mb-6">
+                        The 90-Day Profit Sprint
+                        </h2>
+                        <p className="text-xl md:text-2xl text-[#B9C6D9] max-w-3xl mx-auto font-light">
+                        A done-for-you engagement to fix growth leaks and rebuild your scaling foundation.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-12 items-start">
+                        <div>
+                            <p className="text-lg leading-relaxed mb-6">
+                                The 90-Day Profit Sprint is a structured, hands-on engagement designed to help brands identify wasted ad spend, isolate true incremental growth, and rebuild measurement around profit.
+                            </p>
+                            
+                            {/* Founder-led Positioning */}
+                            <div className="mb-8 p-6 bg-white/5 border border-white/10 rounded-lg">
+                                <h3 className="text-white font-bold text-lg mb-3">Founder-led execution, not agency layers</h3>
+                                <p className="text-[#B9C6D9] leading-relaxed mb-4 text-sm">
+                                    During the 90-Day Profit Sprint:
+                                </p>
+                                <ul className="space-y-2 text-[#B9C6D9] mb-4 text-sm">
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#036771] rounded-full shrink-0"></div>Strategy is led by us</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#036771] rounded-full shrink-0"></div>Decisions are made with us</li>
+                                    <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-[#036771] rounded-full shrink-0"></div>Tradeoffs are evaluated with us</li>
+                                </ul>
+                                <p className="text-[#B9C6D9] leading-relaxed text-sm">
+                                    You’re not handed off to account managers. You have direct access to the people accountable for outcomes. Fixing growth systems requires context, experience, and judgment.
+                                </p>
+                            </div>
+
+                            <p className="text-lg leading-relaxed mb-8">
+                                This is not consulting theory. <span className="text-[#036771] font-bold text-white">This is applied, operational work.</span>
+                            </p>
+                            
+                            <div className="bg-[#036771]/20 border border-[#036771] p-6 rounded-lg">
+                                <p className="font-bold text-center">Guaranteed lift in contribution margin or new-customer efficiency.</p>
+                            </div>
+                        </div>
+
+                        {/* --- WHAT WE DO (Bullets) --- */}
+                        <div className="bg-white text-[#0E2042] p-8 rounded-xl shadow-xl">
+                        <h3 className="font-nunito font-bold text-xl mb-6 border-b border-[#E0E3E3] pb-4">
+                            What we do in 90 days:
+                        </h3>
+                        <ul className="space-y-4">
+                            {[
+                            "Uncover wasted ad spend across channels",
+                            "Identify new, incremental growth opportunities",
+                            "Rebuild measurement (MER, NCAC, LTV, Contribution Margin)",
+                            "Redesign media execution around profit",
+                            "Align creative systems to funnel stage"
+                            ].map((item, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                                <Check className="w-5 h-5 text-[#036771] shrink-0 mt-1" strokeWidth={3} />
+                                <span className="font-medium">{item}</span>
+                            </li>
+                            ))}
+                        </ul>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* --- 7. ROADMAP SECTION (ACCORDION) --- */}
+                <section className="py-24 px-6 bg-white">
+                  <div className="max-w-4xl mx-auto">
+                    <div className="text-center mb-16">
+                      <h2 className="text-3xl md:text-4xl font-extrabold text-[#0E2042] mb-4">
+                        The 90-Day Profit Sprint Roadmap
+                      </h2>
+                      <p className="text-xl text-[#036771] font-medium">
+                        What happens in each phase — and why it works.
+                      </p>
+                    </div>
+
+                    <div className="space-y-6">
+
+                        {/* Phase 1 - Always Expanded or Toggleable */}
+                        <div className="border border-[#E0E3E3] rounded-lg overflow-hidden transition-all duration-300">
+                             <div 
+                                onClick={() => toggleMonth(1)}
+                                className={`flex justify-between items-center p-6 cursor-pointer hover:bg-[#F5F7F7] ${openMonth === 1 ? 'bg-[#F5F7F7]' : 'bg-white'}`}
+                             >
+                                <div className="flex items-center gap-4">
+                                    <span className="inline-block px-3 py-1 rounded-full bg-[#036771]/10 text-[#036771] font-bold text-sm tracking-wide uppercase">
+                                        Month 1
+                                    </span>
+                                    <h3 className="text-lg md:text-xl font-bold text-[#0E2042]">Diagnosis & Roadmap</h3>
+                                </div>
+                                {openMonth === 1 ? <ChevronUp className="text-[#0E2042]" /> : <ChevronDown className="text-[#0E2042]" />}
+                             </div>
+                             
+                             {openMonth === 1 && (
+                                <div className="p-6 pt-0 bg-[#F5F7F7] border-t border-[#E0E3E3]">
+                                    <h3 className="text-lg font-bold text-[#0E2042] mb-3 mt-4">
+                                        Understand where growth is leaking — and why.
+                                    </h3>
+                                    <p className="text-[#0E2042]/80 leading-relaxed mb-4">
+                                        We start by assessing the true health of the business. Not platform performance — business performance. This phase is about identifying patterns of sustainable growth, hidden plateaus, and silent decline masked by “good” metrics.
+                                    </p>
+                                    <ul className="space-y-2 mt-4">
+                                        {[
+                                           "Diagnose current growth levers and constraints",
+                                           "Stress-test channels to identify wasted ad spend",
+                                           "Redefine channel and campaign investment priorities",
+                                           "Establish a clear profit and contribution baseline"
+                                        ].map((item, i) => (
+                                           <li key={i} className="flex items-start gap-3 text-sm font-medium text-[#0E2042]/70">
+                                                <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#036771] shrink-0"></div>
+                                                {item}
+                                           </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                             )}
+                        </div>
+
+                        {/* Phase 2 */}
+                        <div className="border border-[#E0E3E3] rounded-lg overflow-hidden transition-all duration-300">
+                             <div 
+                                onClick={() => toggleMonth(2)}
+                                className={`flex justify-between items-center p-6 cursor-pointer hover:bg-[#F5F7F7] ${openMonth === 2 ? 'bg-[#F5F7F7]' : 'bg-white'}`}
+                             >
+                                <div className="flex items-center gap-4">
+                                    <span className="inline-block px-3 py-1 rounded-full bg-[#036771]/10 text-[#036771] font-bold text-sm tracking-wide uppercase">
+                                        Month 2
+                                    </span>
+                                    <h3 className="text-lg md:text-xl font-bold text-[#0E2042]">System Rebuild</h3>
+                                </div>
+                                {openMonth === 2 ? <ChevronUp className="text-[#0E2042]" /> : <ChevronDown className="text-[#0E2042]" />}
+                             </div>
+                             
+                             {openMonth === 2 && (
+                                <div className="p-6 pt-0 bg-[#F5F7F7] border-t border-[#E0E3E3]">
+                                    <h3 className="text-lg font-bold text-[#0E2042] mb-3 mt-4">
+                                        Rebuild growth systems for efficiency, clarity, and signal alignment.
+                                    </h3>
+                                    <p className="text-[#0E2042]/80 leading-relaxed mb-4">
+                                        Once the leaks are visible, we rebuild the system around what actually drives incremental growth. This is where structure replaces guesswork.
+                                    </p>
+                                    <ul className="space-y-2 mt-4">
+                                        {[
+                                           "Restructure Google & Meta account architecture",
+                                           "Align paid media optimization to incremental signals",
+                                           "Implement a creative framework focused on new customer acquisition",
+                                           "Rebuild measurement logic to support better scaling decisions"
+                                        ].map((item, i) => (
+                                           <li key={i} className="flex items-start gap-3 text-sm font-medium text-[#0E2042]/70">
+                                                <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#036771] shrink-0"></div>
+                                                {item}
+                                           </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                             )}
+                        </div>
+
+                        {/* Phase 3 */}
+                        <div className="border border-[#E0E3E3] rounded-lg overflow-hidden transition-all duration-300">
+                             <div 
+                                onClick={() => toggleMonth(3)}
+                                className={`flex justify-between items-center p-6 cursor-pointer hover:bg-[#F5F7F7] ${openMonth === 3 ? 'bg-[#F5F7F7]' : 'bg-white'}`}
+                             >
+                                <div className="flex items-center gap-4">
+                                    <span className="inline-block px-3 py-1 rounded-full bg-[#036771]/10 text-[#036771] font-bold text-sm tracking-wide uppercase">
+                                        Month 3
+                                    </span>
+                                    <h3 className="text-lg md:text-xl font-bold text-[#0E2042]">Scale Profitably</h3>
+                                </div>
+                                {openMonth === 3 ? <ChevronUp className="text-[#0E2042]" /> : <ChevronDown className="text-[#0E2042]" />}
+                             </div>
+                             
+                             {openMonth === 3 && (
+                                <div className="p-6 pt-0 bg-[#F5F7F7] border-t border-[#E0E3E3]">
+                                    <h3 className="text-lg font-bold text-[#0E2042] mb-3 mt-4">
+                                        Scale what works — without reintroducing inefficiencies.
+                                    </h3>
+                                    <p className="text-[#0E2042]/80 leading-relaxed mb-4">
+                                        With clean signals and aligned execution, we scale deliberately. No brute force. No blind budget increases.
+                                    </p>
+                                    <ul className="space-y-2 mt-4">
+                                        {[
+                                           "Optimize cross-channel performance",
+                                           "Scale campaigns that meet NCAC, MER, and profit targets",
+                                           "Reallocate budgets toward proven incremental levers",
+                                           "Deep-dive into growth drivers (Funnel insights, New customer patterns)"
+                                        ].map((item, i) => (
+                                           <li key={i} className="flex items-start gap-3 text-sm font-medium text-[#0E2042]/70">
+                                                <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#036771] shrink-0"></div>
+                                                {item}
+                                           </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                             )}
+                        </div>
+
+                    </div>
+
+                    <div className="text-center mt-16 pt-8 border-t border-[#E0E3E3]/50">
+                        <p className="text-2xl font-bold text-[#0E2042]">
+                            This is how growth compounds — with clarity, alignment, and control.
+                        </p>
+                        <p className="text-[#0E2042]/60 mt-3 text-sm uppercase tracking-wider font-semibold">
+                            No guesswork. No chaos. Just a system that scales.
+                        </p>
+                    </div>
+                  </div>
+                </section>
+
+                {/* --- 8. DELIVERABLES --- */}
+                <section className="py-20 px-6 bg-[#F5F7F7]">
+                    <div className="max-w-6xl mx-auto">
+                    <h2 className="text-3xl font-bold text-[#0E2042] text-center mb-6">
+                        What You'll Get
+                    </h2>
+                    <h3 className="text-xl md:text-2xl font-bold text-[#036771] text-center mb-12 max-w-3xl mx-auto">
+                        By day 90, you’ll know exactly where to scale — and where not to.
+                    </h3>
+                    
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* Card 1 */}
+                        <div className="bg-white p-8 rounded-lg shadow-sm border border-[#E0E3E3] hover:border-[#036771] transition-colors">
+                        <div className="w-12 h-12 bg-[#E0E3E3] rounded-lg flex items-center justify-center mb-6 text-[#0E2042]">
+                            <Target className="w-6 h-6" />
+                        </div>
+                        <h3 className="font-nunito font-bold text-xl text-[#0E2042] mb-3">Frameworks</h3>
+                        <p className="text-[#0E2042]/70 text-sm leading-relaxed">
+                            Complete Growth & Profit Measurement Framework, Budget Allocation models, and Meta & Google Execution Frameworks.
+                        </p>
+                        </div>
+                        
+                        {/* Card 2 */}
+                        <div className="bg-white p-8 rounded-lg shadow-sm border border-[#E0E3E3] hover:border-[#036771] transition-colors">
+                        <div className="w-12 h-12 bg-[#E0E3E3] rounded-lg flex items-center justify-center mb-6 text-[#0E2042]">
+                            <PieChart className="w-6 h-6" />
+                        </div>
+                        <h3 className="font-nunito font-bold text-xl text-[#0E2042] mb-3">Creative</h3>
+                        <p className="text-[#0E2042]/70 text-sm leading-relaxed">
+                            The Incrementalist Playbook for high-impact creative systems that actually convert cold traffic.
+                        </p>
+                        </div>
+
+                        {/* Card 3 */}
+                        <div className="bg-white p-8 rounded-lg shadow-sm border border-[#E0E3E3] hover:border-[#036771] transition-colors">
+                        <div className="w-12 h-12 bg-[#E0E3E3] rounded-lg flex items-center justify-center mb-6 text-[#0E2042]">
+                            <TrendingUp className="w-6 h-6" />
+                        </div>
+                        <h3 className="font-nunito font-bold text-xl text-[#0E2042] mb-3">Strategy</h3>
+                        <p className="text-[#0E2042]/70 text-sm leading-relaxed">
+                            Hands-on weekly strategy & optimization sprints to ensure implementation and results.
+                        </p>
+                        </div>
+                    </div>
+                    </div>
+                </section>
+
+                {/* --- 4. FOUNDER STORY (MOVED HERE) --- */}
+                <section className="py-24 px-6 bg-white">
+                    <div className="max-w-3xl mx-auto bg-[#F5F7F7] p-8 md:p-12 rounded-xl shadow-sm border border-[#E0E3E3]">
+                    <h3 className="text-2xl font-bold font-nunito text-[#0E2042] mb-8">
+                        I know this problem because I lived it.
+                    </h3>
+                    
+                    <div className="space-y-5 text-[#0E2042]/90 leading-relaxed font-medium">
+                        <p>I experienced this firsthand.</p>
+                        <p>While working with top DTC companies spending $100k+ per month on ads, I kept seeing the same pattern.</p>
+                        <p>We’d increase ad spend. Platforms would report strong results. Everyone would get excited. So we’d push more spend.</p>
+                        <p>But behind the scenes, the business was hurting. Sales were flat. Profit was down. Margins kept getting thinner.</p>
+                        <p className="italic border-l-4 border-[#036771] pl-4 py-1 my-6 bg-[#E0E3E3]/50">
+                        Yet platforms kept saying: "ROAS looks great. Keep pushing spend."
+                        </p>
+                        <p>Something didn’t add up. I wasn’t buying it.</p>
+                        <p>Over time, I realized the issue wasn’t the channel, the budget, or the creatives.</p>
+                        <p><span className="font-bold">It was the system.</span> A broken attribution and decision-making framework that rewarded platform performance — while the business leaked profit.</p>
+                        <p>Fixing this took years to understand. Real growth doesn't require more budget, channels, or tools. It requires clarity.</p>
+                        <p>A system aligned around <span className="text-[#036771] font-bold">Profit, Contribution Margin, and Real New-Customer Growth</span>.</p>
+                        <p>That realization became the foundation of Incrementalist.</p>
+                    </div>
+                    </div>
+                </section>
+
+                {/* --- 9. QUALIFICATION --- */}
+                <section className="py-20 px-6 bg-white">
+                    <div className="max-w-5xl mx-auto">
+                    <div className="grid md:grid-cols-2 gap-0 md:gap-12 rounded-2xl overflow-hidden border border-[#E0E3E3]">
+                        
+                        {/* Who This Is For */}
+                        <div className="bg-[#F0FDF4] p-10">
+                        <h3 className="font-nunito font-bold text-2xl text-[#0E2042] mb-6 flex items-center gap-3">
+                            <Check className="w-6 h-6 text-[#036771]" />
+                            Who this IS for
+                        </h3>
+                        <ul className="space-y-4">
+                            {[
+                            "Brands spending USD $100k+ /mo on paid media",
+                            "Already generating consistent revenue",
+                            "Want to scale profit, not just traffic",
+                            "Care about contribution margin and cash flow"
+                            ].map((item, i) => (
+                            <li key={i} className="flex items-start gap-3 text-[#0E2042]/80 font-medium">
+                                <Check className="w-5 h-5 text-[#036771] shrink-0 mt-0.5" />
+                                {item}
+                            </li>
+                            ))}
+                        </ul>
+                        </div>
+
+                        {/* Who This Is NOT For */}
+                        <div className="bg-[#F5F7F7] p-10 border-t md:border-t-0 md:border-l border-[#E0E3E3]">
+                        <h3 className="font-nunito font-bold text-2xl text-[#0E2042]/60 mb-6 flex items-center gap-3">
+                            <X className="w-6 h-6 text-[#64748B]" />
+                            Who this is NOT for
+                        </h3>
+                        <ul className="space-y-4">
+                            {[
+                            "Brands who are pre-product or pre-revenue",
+                            "Founders looking for quick hacks or shortcuts",
+                            "Teams only focused on ROAS screenshots"
+                            ].map((item, i) => (
+                            <li key={i} className="flex items-start gap-3 text-[#0E2042]/60 font-medium">
+                                <X className="w-5 h-5 text-[#64748B] shrink-0 mt-0.5" />
+                                {item}
+                            </li>
+                            ))}
+                        </ul>
+                        </div>
+
+                    </div>
+                    </div>
+                </section>
+
+                {/* --- 10. CTA SECTION --- */}
+                <section className="py-24 px-6 bg-white text-center">
+                    <div className="max-w-3xl mx-auto">
+                    <h2 className="text-4xl md:text-5xl font-extrabold text-[#0E2042] mb-6">
+                        Scale with clarity — not chaos.
+                    </h2>
+                    <p className="text-lg md:text-xl text-[#0E2042]/70 mb-10 max-w-xl mx-auto">
+                        If this resonates, the next step is simple. Apply to see if the 90-Day Profit Sprint is a fit for your brand. <br/>
+                        <span className="text-sm mt-4 block text-[#0E2042]/50 font-semibold uppercase tracking-wider">No pressure. No generic pitch. Just clarity.</span>
+                    </p>
+                    
+                    <button 
+                        onClick={scrollToApply}
+                        className="bg-[#0E2042] text-white px-10 py-5 rounded font-bold text-xl hover:bg-[#036771] transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 mb-6"
+                    >
+                        Apply for the 90-Day Profit Sprint
+                    </button>
+                    
+                    <p className="text-[#0E2042]/60 text-sm font-medium max-w-xl mx-auto">
+                        This is a founder-led engagement built for brands that value clarity, senior judgment, and real partnership.
+                    </p>
+                    </div>
+                </section>
+
+                {/* --- 11. APPLICATION FORM SECTION --- */}
+                <section id="apply-section" className="py-24 px-6 bg-[#F5F7F7] border-t border-[#E0E3E3]">
+                    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-[#E0E3E3] overflow-hidden">
+                        
+                        {/* Form Header */}
+                        <div className="bg-[#0E2042] p-8 text-center">
+                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                                Apply for a Strategy Call
+                            </h2>
+                            <p className="text-[#B9C6D9] text-sm font-medium">
+                                A short qualification form to see if we’re a fit.
+                            </p>
+                            
+                            {/* Qualification Reminder */}
+                            <p className="text-white font-bold text-sm mt-4 bg-white/10 py-2 px-4 rounded-lg inline-block border border-white/20">
+                                If you’re not spending $100k+/month on paid media, this won’t be a fit.
+                            </p>
+                        </div>
+
+                        {/* Form Body - CONDITIONAL RENDERING */}
+                        <div className="p-8 md:p-10 space-y-6">
+                            
+                            {!isSubmitted ? (
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    {/* Row 1: Name */}
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-bold text-[#0E2042] uppercase tracking-wide">First Name</label>
+                                            <input required type="text" className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E0E3E3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent transition-all text-[#0E2042] font-medium" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-bold text-[#0E2042] uppercase tracking-wide">Last Name</label>
+                                            <input required type="text" className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E0E3E3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent transition-all text-[#0E2042] font-medium" />
+                                        </div>
+                                    </div>
+
+                                    {/* Row 2: Company Name & Website */}
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-bold text-[#0E2042] uppercase tracking-wide">Company Name</label>
+                                            <input required type="text" className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E0E3E3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent transition-all text-[#0E2042] font-medium" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-bold text-[#0E2042] uppercase tracking-wide">Company Website</label>
+                                            <input required type="url" placeholder="https://" className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E0E3E3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent transition-all text-[#0E2042] font-medium" />
+                                        </div>
+                                    </div>
+
+                                    {/* Row 3: Email */}
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-bold text-[#0E2042] uppercase tracking-wide">Work Email</label>
+                                        <input required type="email" className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E0E3E3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent transition-all text-[#0E2042] font-medium" />
+                                        <p className="text-xs text-[#0E2042]/50">Please use your business email.</p>
+                                    </div>
+
+                                    {/* Row 4: Phone with Country Selector */}
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-bold text-[#0E2042] uppercase tracking-wide">Phone Number</label>
+                                        <div className="flex">
+                                            <select className="px-3 py-3 bg-[#F8FAFC] border border-r-0 border-[#E0E3E3] rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent text-[#0E2042] font-medium min-w-[120px]">
+                                                <option value="+1">🇺🇸 +1</option>
+                                                <option value="+44">🇬🇧 +44</option>
+                                                <option value="+61">🇦🇺 +61</option>
+                                                <option value="+1">🇨🇦 +1</option>
+                                                <option value="+49">🇩🇪 +49</option>
+                                                <option value="+52">🇲🇽 +52</option>
+                                            </select>
+                                            <input required type="tel" className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E0E3E3] rounded-r-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent transition-all text-[#0E2042] font-medium" />
+                                        </div>
+                                    </div>
+
+                                    {/* Row 5: Monthly Ad Spend */}
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-bold text-[#0E2042] uppercase tracking-wide">Monthly Ad Spend</label>
+                                        <div className="relative">
+                                            <select required className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E0E3E3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent transition-all text-[#0E2042] font-medium appearance-none cursor-pointer">
+                                                <option value="" disabled selected>Select your current spend...</option>
+                                                <option value="under_50k">Less than $50k</option>
+                                                <option value="50k_100k">$50k – $100k</option>
+                                                <option value="100k_250k">$100k – $250k</option>
+                                                <option value="250k_500k">$250k – $500k</option>
+                                                <option value="over_500k">More than $500k</option>
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-[#0E2042]">
+                                                <ChevronDown className="w-5 h-5" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Row 6: Biggest Challenge (Optional) */}
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-bold text-[#0E2042] uppercase tracking-wide">Biggest growth or profit challenge right now <span className="text-[#0E2042]/40 font-normal lowercase">(optional)</span></label>
+                                        <textarea rows="2" placeholder="e.g. Profit shrinking despite higher spend, unclear new customer growth, attribution issues..." className="w-full px-4 py-3 bg-[#F8FAFC] border border-[#E0E3E3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#036771] focus:border-transparent transition-all text-[#0E2042] font-medium resize-none"></textarea>
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <button type="submit" className="w-full bg-[#036771] text-white py-4 rounded-lg font-bold text-lg hover:bg-[#02545d] transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group">
+                                        Apply to see if the Sprint is a fit
+                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    </button>
+
+                                    {/* Microcopy */}
+                                    <div className="pt-2 text-center space-y-1">
+                                        <p className="text-sm text-[#0E2042]/60 font-medium">
+                                            If it’s a fit, you’ll hear from us within 48 hours.
+                                        </p>
+                                        <p className="text-sm text-[#0E2042]/60 font-medium">
+                                            No pitch. No pressure.
+                                        </p>
+                                    </div>
+                                </form>
+                            ) : (
+                                /* Success State */
+                                <div className="text-center py-10 animate-fade-in">
+                                    <div className="w-16 h-16 bg-[#036771]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <CheckCircle className="w-8 h-8 text-[#036771]" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-[#0E2042] mb-4">Application received</h3>
+                                    <p className="text-[#0E2042]/70 leading-relaxed max-w-md mx-auto">
+                                        Thanks for applying. We’ll review your information and reach out if the 90-Day Profit Sprint is a fit for your brand.
+                                    </p>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- FOOTER --- */}
+                <footer className="bg-[#0E2042] py-12 px-6 border-t border-[#B9C6D9]/20">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-[#B9C6D9] text-sm">
+                    <div className="mb-4 md:mb-0">
+                        {/* Footer Logo: Updated from text to image */}
+                        <img 
+                            src="logo.png" 
+                            alt="Incrementalist" 
+                            className="h-10 w-auto object-contain brightness-0 invert opacity-90 hover:opacity-100 transition-opacity" 
+                        />
+                    </div>
+                    <div className="flex space-x-6">
+                        <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                        <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+                        <span>© {new Date().getFullYear()} Incrementalist</span>
+                    </div>
+                    </div>
+                </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
